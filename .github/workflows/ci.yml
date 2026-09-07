@@ -42,7 +42,7 @@ jobs:
       - name: Build
         env:
           APP_JWT_SECRET: ${{ secrets.APP_JWT_SECRET }}
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/sns
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ec
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
         run: mvn -B verify
