@@ -1,3 +1,16 @@
 spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
   application:
     name: ec-api
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET}
