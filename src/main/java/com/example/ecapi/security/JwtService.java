@@ -1,5 +1,6 @@
 package com.example.ecapi.security;
 
+import com.example.ecapi.enums.Role;
 import com.example.ecapi.exception.InvalidTokenException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -29,13 +30,14 @@ public class JwtService {
         this.clock = clock;
     }
 
-    public String createToken(UUID userId){
+    public String createToken(UUID userId, Role role){
 
         Instant now = clock.instant();
         Instant expiry = now.plus(Duration.ofMinutes(EXPIRE_MINUTES));
 
         return Jwts.builder()
                 .subject(userId.toString())
+                .claim("role", role)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(key)
