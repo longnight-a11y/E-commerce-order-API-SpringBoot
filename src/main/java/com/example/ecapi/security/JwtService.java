@@ -25,8 +25,8 @@ public class JwtService {
 
     private static final long EXPIRE_MINUTES = 30;
 
-    public JwtService(@Value("${app.jwt.secret}") String key, Clock clock){
-        this.key = Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8));
+    public JwtService(SecretKey key, Clock clock){
+        this.key = key;
         this.clock = clock;
     }
 
@@ -44,19 +44,4 @@ public class JwtService {
                 .compact();
     }
 
-    public UUID decodeToken(String token){
-        try {
-            String sub = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload()
-                    .getSubject();
-            return UUID.fromString(sub);
-        } catch (ExpiredJwtException e){
-            throw new InvalidTokenException("Token has expired", e);
-        } catch (JwtException | IllegalArgumentException e){
-            throw new InvalidTokenException("Invalid token", e);
-        }
-    }
 }
