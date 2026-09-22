@@ -13,6 +13,8 @@ Spring Security
   │
   ├─ BearerTokenAuthenticationFilter
   │
+  ├─ JwtDecoder
+  │
   ├─ JwtAuthenticationConverter
   │       ↓
   │    ROLE_CUSTOMER
