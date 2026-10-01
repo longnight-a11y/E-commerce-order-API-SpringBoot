@@ -52,11 +52,27 @@ public class ProductService {
     }
 
     public PageResponse<ProductResponse> getProducts(int page, int size){
-        Page<Product> result = productRepository.findAll(PageRequest.of(page - 1, size));
+        Page<Product> result = productRepository.findAllWithUserAndCategory(PageRequest.of(page - 1, size));
         List<ProductResponse> items = result.getContent().stream().map(this::toResponse).toList();
         return new PageResponse<>(items, result.getNumberOfElements(), page, size);
     }
 
+    public ProductResponse getSingleProduct(UUID productId){
+        return toResponse(getProductIfExists(productId));
+    }
+
+    public  PageResponse<ProductResponse> getProductsOfSpecificSeller(int page, int size, UUID sellerId){
+        Page<Product> result = productRepository.findAllBySellerIdWithUserAndCategory(sellerId, PageRequest.of(page - 1, size));
+        List<ProductResponse> items = result.getContent().stream().map(this::toResponse).toList();
+        return new PageResponse<>(items, result.getNumberOfElements(), page, size);
+    }
+
+    // --------------------------------------------------------------------------
+
+    private Product getProductIfExists(UUID productId){
+        return productRepository.findByIdWithUserAndCategory(productId)
+                .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
+    }
 
     private void checkWhetherUserExists(User user){
         if(!userRepository.existsById(user.getId())){
