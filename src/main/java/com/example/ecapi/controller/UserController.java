@@ -7,6 +7,7 @@ import com.example.ecapi.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,8 +26,9 @@ public class UserController {
         return userService.createUser(request);
     }
 
-    @GetMapping
-    public UserResponse getMe(@AuthenticationPrincipal User user){
-        return userService.toResponse(user);
+    @GetMapping("/me")
+    @Operation(summary = "Get My Information")
+    public UserResponse getMe(@AuthenticationPrincipal Jwt jwt){
+        return userService.getMe(jwt);
     }
 }

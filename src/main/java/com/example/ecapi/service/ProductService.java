@@ -15,9 +15,11 @@ import com.example.ecapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -34,8 +36,8 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductResponse createProduct(ProductCreateRequest request, User user){
-        checkWhetherUserExists(user);
+    public ProductResponse createProduct(ProductCreateRequest request, Jwt jwt){
+        User user = getUserIfExists(jwt);
         if(user.getRole() != Role.ADMIN && user.getRole() != Role.SELLER){
             throw new AccessDeniedException("Only seller or admin can sell products.");
         }
@@ -74,10 +76,10 @@ public class ProductService {
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
     }
 
-    private void checkWhetherUserExists(User user){
-        if(!userRepository.existsById(user.getId())){
-            throw new ResourceNotFoundException("User not found");
-        }
+    private User getUserIfExists(Jwt jwt){
+        UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+        return userRepository.findById(userId)
+                .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
     }
     private Category getCategoryIfExists(UUID categoryId){
         return categoryRepository.findById(categoryId)

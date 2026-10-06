@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -26,8 +27,8 @@ public class ProductController {
 
     @PostMapping
     @Operation(summary = "Sell New Product")
-    public ProductResponse createProduct(@Valid @RequestBody ProductCreateRequest request, @AuthenticationPrincipal User user){
-        return productService.createProduct(request, user);
+    public ProductResponse createProduct(@Valid @RequestBody ProductCreateRequest request, @AuthenticationPrincipal Jwt jwt){
+        return productService.createProduct(request, jwt);
     }
 
     @GetMapping
@@ -50,4 +51,6 @@ public class ProductController {
                                                      @PathVariable UUID sellerId){
         return productService.getProductsOfSpecificSeller(page, size, sellerId);
     }
+
+    // 次回、UIで動作確認！！！！！！！！
 }

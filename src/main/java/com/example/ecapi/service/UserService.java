@@ -5,10 +5,15 @@ import com.example.ecapi.dto.user.UserResponse;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.enums.Role;
 import com.example.ecapi.exception.ConflictException;
+import com.example.ecapi.exception.ResourceNotFoundException;
 import com.example.ecapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -24,7 +29,7 @@ public class UserService {
     @Transactional
     public UserResponse createUser(UserCreateRequest request){
         if(userRepository.existsByEmail(request.email())){
-            throw new ConflictException("Email already exists");
+            throw new ConflictException("User already exists");
         }
         User user = new User();
         user.setUsername(request.username());
@@ -33,6 +38,13 @@ public class UserService {
         user.setRole(Role.CUSTOMER);
         User saved = userRepository.save(user);
         return toResponse(saved);
+    }
+
+    public UserResponse getMe(Jwt jwt){
+        UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+        User user = userRepository.findById(userId)
+                .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
+        return toResponse(user);
     }
 
     public UserResponse toResponse(User user){
