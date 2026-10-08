@@ -76,11 +76,12 @@ public class ProductService {
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
     }
 
-    private User getUserIfExists(Jwt jwt){
+    User getUserIfExists(Jwt jwt){
         UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
         return userRepository.findById(userId)
                 .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
     }
+
     private Category getCategoryIfExists(UUID categoryId){
         return categoryRepository.findById(categoryId)
                 .orElseThrow(()->new ResourceNotFoundException("Category not found"));
