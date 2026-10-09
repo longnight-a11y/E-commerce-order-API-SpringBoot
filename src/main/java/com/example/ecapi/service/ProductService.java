@@ -69,6 +69,12 @@ public class ProductService {
         return new PageResponse<>(items, result.getNumberOfElements(), page, size);
     }
 
+    public PageResponse<ProductResponse> getProductsOfSpecificCategory(int page, int size, UUID categoryId) {
+        Page<Product> result = productRepository.findAllByCategoryIdWithUserAndCategory(categoryId, PageRequest.of(page - 1, size));
+        List<ProductResponse> items = result.getContent().stream().map(this::toResponse).toList();
+        return new PageResponse<>(items, result.getNumberOfElements(), page, size);
+    }
+
     // --------------------------------------------------------------------------
 
     private Product getProductIfExists(UUID productId){

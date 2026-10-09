@@ -44,13 +44,21 @@ public class ProductController {
         return productService.getSingleProduct(productId);
     }
 
-    @GetMapping("/{sellerId}")
+    @GetMapping("/seller/{sellerId}")
     @Operation(summary = "Get Product List of Specific Seller")
-    public PageResponse<ProductResponse> getProducts(@RequestParam(defaultValue = "1") int page,
+    public PageResponse<ProductResponse> getProductsOfSpecificSeller(@RequestParam(defaultValue = "1") int page,
                                                      @RequestParam(defaultValue = "50") int size,
                                                      @PathVariable UUID sellerId){
         return productService.getProductsOfSpecificSeller(page, size, sellerId);
     }
 
-    // 次回、UIで動作確認！！！！！！！！
+    @GetMapping("/category/{categoryId}")
+    @Operation(summary = "Get Product List of Specific Category")
+    public PageResponse<ProductResponse> getProductsOfSpecificCategory(@RequestParam(defaultValue = "1") int page,
+                                                                     @RequestParam(defaultValue = "50") int size,
+                                                                     @PathVariable UUID categoryId) {
+        return productService.getProductsOfSpecificCategory(page, size, categoryId);
+    }
+
+    // Patch, Delete
 }

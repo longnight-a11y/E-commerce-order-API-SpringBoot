@@ -20,6 +20,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query("SELECT p FROM Product p JOIN FETCH p.seller JOIN FETCH p.category WHERE p.seller.id = :sellerId")
     Page<Product> findAllBySellerIdWithUserAndCategory(@Param("sellerId") UUID sellerId, Pageable pageable);
 
+    @Query("SELECT p FROM Product p JOIN FETCH p.seller JOIN FETCH p.category WHERE p.category.id = :categoryId")
+    Page<Product> findAllByCategoryIdWithUserAndCategory(@Param("categoryId") UUID categoryId, Pageable pageable);
+
     Page<Product> findBySellerId(UUID sellerId, Pageable pageable);
 
     Page<Product> findByCategoryId(UUID categoryId, Pageable pageable);
