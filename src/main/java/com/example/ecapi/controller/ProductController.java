@@ -3,6 +3,7 @@ package com.example.ecapi.controller;
 import com.example.ecapi.dto.pagination.PageResponse;
 import com.example.ecapi.dto.product.ProductCreateRequest;
 import com.example.ecapi.dto.product.ProductResponse;
+import com.example.ecapi.dto.product.ProductUpdateRequest;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -60,5 +62,18 @@ public class ProductController {
         return productService.getProductsOfSpecificCategory(page, size, categoryId);
     }
 
-    // Patch, Delete
+    @PatchMapping("/{productId}")
+    @Operation(summary = "Update Product")
+    public ProductResponse updateProduct(@RequestBody @Valid ProductUpdateRequest request,
+                                         @PathVariable UUID productId,
+                                         @AuthenticationPrincipal Jwt jwt){
+        return productService.updateProduct(request, productId, jwt);
+    }
+
+    @DeleteMapping("/{productId}")
+    @Operation(summary = "Delete Product")
+    public Map<String, String> deleteProduct(@PathVariable UUID productId,
+                                             @AuthenticationPrincipal Jwt jwt){
+        return productService.deleteProduct(productId, jwt);
+    }
 }

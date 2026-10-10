@@ -49,7 +49,7 @@ public class CategoryService {
         return new PageResponse<>(items, result.getNumberOfElements(), page, size);
     }
 
-    // add PATCH
+    // add PATCH (only for ADMIN)
 
     // -------------------------------------------------------------------------------------------------
 
