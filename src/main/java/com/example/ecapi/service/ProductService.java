@@ -139,7 +139,7 @@ public class ProductService {
                 .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
     }
 
-    private Category getCategoryIfExists(UUID categoryId){
+    Category getCategoryIfExists(UUID categoryId){
         return categoryRepository.findById(categoryId)
                 .orElseThrow(()->new ResourceNotFoundException("Category not found"));
     }
