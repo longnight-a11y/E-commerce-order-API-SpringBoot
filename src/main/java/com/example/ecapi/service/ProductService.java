@@ -128,7 +128,7 @@ public class ProductService {
 
     // --------------------------------------------------------------------------
 
-    private Product getProductIfExists(UUID productId){
+    Product getProductIfExists(UUID productId){
         return productRepository.findByIdWithUserAndCategory(productId)
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
     }
