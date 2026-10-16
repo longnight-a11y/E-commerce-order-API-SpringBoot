@@ -2,10 +2,13 @@ package com.example.ecapi.service;
 
 import com.example.ecapi.dto.user.UserCreateRequest;
 import com.example.ecapi.dto.user.UserResponse;
+import com.example.ecapi.entity.Cart;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.enums.Role;
 import com.example.ecapi.exception.ConflictException;
 import com.example.ecapi.exception.ResourceNotFoundException;
+import com.example.ecapi.repository.CartRepository;
+import com.example.ecapi.repository.CategoryRepository;
 import com.example.ecapi.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,10 +23,12 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CartRepository cartRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, CategoryRepository categoryRepository, CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.cartRepository = cartRepository;
     }
 
     @Transactional
@@ -37,6 +42,13 @@ public class UserService {
         user.setEmail(request.email());
         user.setRole(Role.CUSTOMER);
         User saved = userRepository.save(user);
+
+        Cart cart = new Cart();
+        cart.setUser(saved);
+        Cart savedCart = cartRepository.save(cart);
+        
+        saved.setCart(savedCart);
+
         return toResponse(saved);
     }
 

@@ -7,6 +7,7 @@ import com.example.ecapi.entity.Cart;
 import com.example.ecapi.entity.CartItem;
 import com.example.ecapi.entity.Product;
 import com.example.ecapi.entity.User;
+import com.example.ecapi.exception.InvalidRequestException;
 import com.example.ecapi.exception.ResourceNotFoundException;
 import com.example.ecapi.repository.CartRepository;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,9 @@ public class CartService {
     @Transactional
     public CartResponse addItem(AddCartItemRequest request, Jwt jwt){
         User user = productService.getUserIfExists(jwt);
+        if(request.quantity() <= 0){
+            throw new InvalidRequestException("Quantity must be greater than 0");
+        }
         Product product = productService.getProductIfExists(request.itemId());
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(()-> new ResourceNotFoundException("Cart not found"));
@@ -48,6 +52,8 @@ public class CartService {
         }
         return toResponse(cart);
     }
+
+    // quantity 減らす機能
 
     // -----------------------------------------------------------------------------------
 
