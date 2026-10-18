@@ -59,7 +59,7 @@ public class CartService {
 
     private CartResponse toResponse(Cart cart){
         List<CartItemResponse> items = cart.getItems().stream()
-                .map(item -> {
+                .map(item -> {  // This map converts each item into CartItemResponse
                     BigDecimal unitPrice = item.getProduct().getPrice();
                     BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
 

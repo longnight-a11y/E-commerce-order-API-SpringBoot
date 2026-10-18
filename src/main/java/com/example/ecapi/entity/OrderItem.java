@@ -29,5 +29,5 @@ public class OrderItem {
     private int quantity;
 
     @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal unitPrice;  // the price when the item was ordered
+    private BigDecimal unitPrice;
 }
