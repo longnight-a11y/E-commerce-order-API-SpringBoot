@@ -27,4 +27,9 @@ public class OrderController {
                                      @AuthenticationPrincipal Jwt jwt){
         return orderService.createOrder(request, jwt);
     }
+    @PostMapping("/checkout")
+    @Operation(summary = "Checkout All Cart Items")
+    public OrderResponse checkout(@AuthenticationPrincipal Jwt jwt){
+        return orderService.checkout(jwt);
+    }
 }

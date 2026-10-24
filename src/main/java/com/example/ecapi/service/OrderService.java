@@ -8,6 +8,7 @@ import com.example.ecapi.entity.*;
 import com.example.ecapi.enums.OrderStatus;
 import com.example.ecapi.exception.InvalidRequestException;
 import com.example.ecapi.exception.ResourceNotFoundException;
+import com.example.ecapi.repository.CartRepository;
 import com.example.ecapi.repository.OrderRepository;
 import com.example.ecapi.repository.ProductRepository;
 import jakarta.transaction.Transactional;
@@ -25,12 +26,14 @@ public class OrderService {
     private final ProductService productService;
     private final ProductRepository productRepository;
     private final UserService userService;
+    private final CartRepository cartRepository;
 
-    public OrderService(OrderRepository orderRepository, ProductService productService, ProductRepository productRepository, UserService userService) {
+    public OrderService(OrderRepository orderRepository, ProductService productService, ProductRepository productRepository, UserService userService, CartRepository cartRepository) {
         this.orderRepository = orderRepository;
         this.productService = productService;
         this.productRepository = productRepository;
         this.userService = userService;
+        this.cartRepository = cartRepository;
     }
 
     @Transactional
@@ -63,6 +66,46 @@ public class OrderService {
 
             // Reduce the product's stock quantity
             product.setStockQuantity(product.getStockQuantity() - itemRequest.quantity());
+
+            order.getOrderItems().add(orderItem);
+        }
+        order.setTotalPrice(total);
+        Order saved = orderRepository.save(order);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public OrderResponse checkout(Jwt jwt){
+        User user = userService.getUserWithCartIfExists(jwt);
+        Cart cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(()-> new ResourceNotFoundException("Cart not found"));
+        Order order = new Order();
+        order.setUser(user);
+        order.setStatus(OrderStatus.PENDING);
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (CartItem item : cart.getItems()){
+            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
+                    .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
+            if(item.getQuantity() <= 0){
+                throw new InvalidRequestException("Quantity must be greater than 0");
+            }
+            if(product.getStockQuantity() < item.getQuantity()){
+                throw new InvalidRequestException("Insufficient stock");
+            }
+            BigDecimal unitPrice = product.getPrice();
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
+            orderItem.setQuantity(item.getQuantity());
+            orderItem.setUnitPrice(unitPrice);
+
+            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+            total.add(subtotal);
+
+            // Reduce the product's stock quantity
+            product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
 
             order.getOrderItems().add(orderItem);
         }
