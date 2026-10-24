@@ -9,6 +9,7 @@ import com.example.ecapi.entity.Product;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.exception.InvalidRequestException;
 import com.example.ecapi.exception.ResourceNotFoundException;
+import com.example.ecapi.repository.CartItemRepository;
 import com.example.ecapi.repository.CartRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -23,10 +24,12 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final ProductService productService;
+    private final CartItemRepository cartItemRepository;
 
-    public CartService(CartRepository cartRepository, ProductService productService) {
+    public CartService(CartRepository cartRepository, ProductService productService, CartItemRepository cartItemRepository) {
         this.cartRepository = cartRepository;
         this.productService = productService;
+        this.cartItemRepository = cartItemRepository;
     }
 
     @Transactional
@@ -40,12 +43,15 @@ public class CartService {
                 .orElseThrow(()-> new ResourceNotFoundException("Cart not found"));
 
         // Check whether the requested item already exists in a cart
-        CartItem item = cart.getItems().stream().filter(i -> i.getId().equals(product.getId())).findFirst()
+        CartItem item = cart.getItems().stream().filter(i -> i.getProduct().getId().equals(product.getId())).findFirst()
                 .orElse(null);
         if(item == null){
             CartItem newItem = new CartItem();
             newItem.setProduct(product);
             newItem.setQuantity(request.quantity());
+            newItem.setCart(cart);
+
+            cartItemRepository.save(newItem);  // this is necessary for generating newItem's id before returning the response
             cart.getItems().add(newItem);
         }else {
             item.setQuantity(item.getQuantity() + request.quantity());

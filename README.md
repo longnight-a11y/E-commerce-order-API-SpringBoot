@@ -36,3 +36,17 @@ Controller
   ↓
 Service
 ```
+
+---
+
+## API Endpoints
+
+### Authentication
+
+### Users
+
+### Products
+
+### Cart
+
+### Orders
