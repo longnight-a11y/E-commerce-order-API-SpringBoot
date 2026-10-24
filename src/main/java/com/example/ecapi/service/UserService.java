@@ -59,7 +59,15 @@ public class UserService {
         return toResponse(user);
     }
 
-    public UserResponse toResponse(User user){
+    // -------------------------------------------------------------------------------------
+
+    User getUserWithCartIfExists(Jwt jwt){
+        UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+        return userRepository.findByIdWithCart(userId)
+                .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
+    }
+
+    private UserResponse toResponse(User user){
         return new UserResponse(user.getId(), user.getUsername(), user.getEmail(), user.getRole());
     }
 }

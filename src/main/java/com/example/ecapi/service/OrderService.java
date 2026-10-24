@@ -4,13 +4,12 @@ import com.example.ecapi.dto.order.CreateOrderRequest;
 import com.example.ecapi.dto.order.OrderItemRequest;
 import com.example.ecapi.dto.order.OrderItemResponse;
 import com.example.ecapi.dto.order.OrderResponse;
-import com.example.ecapi.entity.Order;
-import com.example.ecapi.entity.OrderItem;
-import com.example.ecapi.entity.Product;
-import com.example.ecapi.entity.User;
+import com.example.ecapi.entity.*;
 import com.example.ecapi.enums.OrderStatus;
 import com.example.ecapi.exception.InvalidRequestException;
+import com.example.ecapi.exception.ResourceNotFoundException;
 import com.example.ecapi.repository.OrderRepository;
+import com.example.ecapi.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -24,10 +23,14 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductService productService;
+    private final ProductRepository productRepository;
+    private final UserService userService;
 
-    public OrderService(OrderRepository orderRepository, ProductService productService) {
+    public OrderService(OrderRepository orderRepository, ProductService productService, ProductRepository productRepository, UserService userService) {
         this.orderRepository = orderRepository;
         this.productService = productService;
+        this.productRepository = productRepository;
+        this.userService = userService;
     }
 
     @Transactional
@@ -39,7 +42,11 @@ public class OrderService {
 
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItemRequest itemRequest : request.items()){
-            Product product = productService.getProductIfExists(itemRequest.productId());
+            Product product = productRepository.findByIdForUpdate(itemRequest.productId())
+                    .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
+            if(itemRequest.quantity() <= 0){
+                throw new InvalidRequestException("Quantity must be greater than 0");
+            }
             if(product.getStockQuantity() < itemRequest.quantity()){
                 throw new InvalidRequestException("Insufficient stock");
             }
