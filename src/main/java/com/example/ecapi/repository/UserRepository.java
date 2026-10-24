@@ -13,7 +13,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
-    @Query("SELECT u FROM users u JOIN FETCH u.cart WHERE u.id = :id")
+    @Query("SELECT u FROM User u JOIN FETCH u.cart WHERE u.id = :id")
     Optional<User> findByIdWithCart(@Param("id") UUID id);
 
     boolean existsByEmail(String email);
