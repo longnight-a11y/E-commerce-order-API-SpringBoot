@@ -4,6 +4,7 @@ import com.example.ecapi.dto.order.CreateOrderRequest;
 import com.example.ecapi.dto.order.OrderItemRequest;
 import com.example.ecapi.dto.order.OrderItemResponse;
 import com.example.ecapi.dto.order.OrderResponse;
+import com.example.ecapi.dto.pagination.PageResponse;
 import com.example.ecapi.entity.*;
 import com.example.ecapi.enums.OrderStatus;
 import com.example.ecapi.exception.InvalidRequestException;
@@ -12,6 +13,9 @@ import com.example.ecapi.repository.CartRepository;
 import com.example.ecapi.repository.OrderRepository;
 import com.example.ecapi.repository.ProductRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +66,7 @@ public class OrderService {
             orderItem.setUnitPrice(unitPrice);
 
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(itemRequest.quantity()));
-            total.add(subtotal);
+            total = total.add(subtotal);
 
             // Reduce the product's stock quantity
             product.setStockQuantity(product.getStockQuantity() - itemRequest.quantity());
@@ -79,6 +83,9 @@ public class OrderService {
         User user = userService.getUserWithCartIfExists(jwt);
         Cart cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(()-> new ResourceNotFoundException("Cart not found"));
+        if(cart.getItems().isEmpty()){
+            throw new InvalidRequestException("No items in your cart");
+        }
         Order order = new Order();
         order.setUser(user);
         order.setStatus(OrderStatus.PENDING);
@@ -91,7 +98,7 @@ public class OrderService {
                 throw new InvalidRequestException("Quantity must be greater than 0");
             }
             if(product.getStockQuantity() < item.getQuantity()){
-                throw new InvalidRequestException("Insufficient stock");
+                throw new InvalidRequestException("Insufficient stock: " + product.getName());
             }
             BigDecimal unitPrice = product.getPrice();
 
@@ -102,7 +109,7 @@ public class OrderService {
             orderItem.setUnitPrice(unitPrice);
 
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
-            total.add(subtotal);
+            total = total.add(subtotal);
 
             // Reduce the product's stock quantity
             product.setStockQuantity(product.getStockQuantity() - item.getQuantity());
@@ -111,7 +118,23 @@ public class OrderService {
         }
         order.setTotalPrice(total);
         Order saved = orderRepository.save(order);
+        // Remove checked-out items from the cart
+        cart.getItems().clear();  // This can remove cartItems because orphanRemoval of items field in cart entity is true
         return toResponse(saved);
+    }
+
+    public PageResponse<OrderResponse> getOrders(Jwt jwt, int page, int size){
+        User user = userService.getUserIfExists(jwt);
+        Page<Order> result = orderRepository.findAllByUserId(user.getId(), PageRequest.of(page -1, size));
+        List<OrderResponse> items = result.getContent().stream().map(this::toResponse).toList();
+        return new PageResponse<>(items, result.getNumberOfElements(), page, size);
+    }
+
+    public OrderResponse getSpecificOrder(Jwt jwt, UUID orderId){
+        User user = userService.getUserIfExists(jwt);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
+        return toResponse(order);
     }
 
     // ------------------------------------------------------------------------------------------

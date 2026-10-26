@@ -61,6 +61,12 @@ public class UserService {
 
     // -------------------------------------------------------------------------------------
 
+    User getUserIfExists(Jwt jwt){
+        UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
+        return userRepository.findById(userId)
+                .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
+    }
+
     User getUserWithCartIfExists(Jwt jwt){
         UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
         return userRepository.findByIdWithCart(userId)
