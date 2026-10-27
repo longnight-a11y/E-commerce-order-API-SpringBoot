@@ -1,10 +1,12 @@
 package com.example.ecapi.controller;
 
 import com.example.ecapi.dto.order.CreateOrderRequest;
+import com.example.ecapi.dto.order.OrderItemRequest;
 import com.example.ecapi.dto.order.OrderResponse;
 import com.example.ecapi.dto.pagination.PageResponse;
 import com.example.ecapi.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,7 +27,7 @@ public class OrderController {
 
     @PostMapping
     @Operation(summary = "Create Order")
-    public OrderResponse createOrder(@RequestBody CreateOrderRequest request,
+    public OrderResponse createOrder(@RequestBody @Valid CreateOrderRequest request,
                                      @AuthenticationPrincipal Jwt jwt){
         return orderService.createOrder(request, jwt);
     }
@@ -33,6 +35,13 @@ public class OrderController {
     @Operation(summary = "Checkout All Cart Items")
     public OrderResponse checkout(@AuthenticationPrincipal Jwt jwt){
         return orderService.checkout(jwt);
+    }
+
+    @PostMapping("/buy-now")
+    @Operation(summary = "Buy a Product Right Now")
+    public OrderResponse buyNow(@AuthenticationPrincipal Jwt jwt,
+                                @RequestBody @Valid OrderItemRequest request){
+        return orderService.buyNow(jwt, request);
     }
 
     @GetMapping

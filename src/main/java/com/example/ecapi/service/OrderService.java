@@ -43,9 +43,7 @@ public class OrderService {
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Jwt jwt){
         User user = productService.getUserIfExists(jwt);
-        Order order = new Order();
-        order.setUser(user);
-        order.setStatus(OrderStatus.PENDING);
+        Order order = newOrder(user);
 
         BigDecimal total = BigDecimal.ZERO;
         for (OrderItemRequest itemRequest : request.items()){
@@ -86,9 +84,7 @@ public class OrderService {
         if(cart.getItems().isEmpty()){
             throw new InvalidRequestException("No items in your cart");
         }
-        Order order = new Order();
-        order.setUser(user);
-        order.setStatus(OrderStatus.PENDING);
+        Order order = newOrder(user);
 
         BigDecimal total = BigDecimal.ZERO;
         for (CartItem item : cart.getItems()){
@@ -123,6 +119,38 @@ public class OrderService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public OrderResponse buyNow(Jwt jwt, OrderItemRequest request){
+        User user = userService.getUserIfExists(jwt);
+        Product product = productRepository.findByIdForUpdate(request.productId())
+                .orElseThrow(()-> new InvalidRequestException("Product not found"));
+        if(request.quantity() <= 0){
+            throw new InvalidRequestException("Quantity must be greater than 0");
+        }
+        if(product.getStockQuantity() < request.quantity()){
+            throw new InvalidRequestException("Insufficient stock: " + product.getName());
+        }
+        Order order = newOrder(user);
+        BigDecimal unitPrice = product.getPrice();
+
+        OrderItem orderItem = new OrderItem();
+        orderItem.setOrder(order);
+        orderItem.setProduct(product);
+        orderItem.setQuantity(request.quantity());
+        orderItem.setUnitPrice(unitPrice);
+
+        BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(request.quantity()));
+
+        // Reduce the product's stock quantity
+        product.setStockQuantity(product.getStockQuantity() - request.quantity());
+
+        order.getOrderItems().add(orderItem);
+        order.setTotalPrice(total);
+
+        Order saved = orderRepository.save(order);
+        return toResponse(saved);
+    }
+
     public PageResponse<OrderResponse> getOrders(Jwt jwt, int page, int size){
         User user = userService.getUserIfExists(jwt);
         Page<Order> result = orderRepository.findAllByUserId(user.getId(), PageRequest.of(page -1, size));
@@ -138,6 +166,13 @@ public class OrderService {
     }
 
     // ------------------------------------------------------------------------------------------
+
+    private Order newOrder(User user){
+        Order order = new Order();
+        order.setUser(user);
+        order.setStatus(OrderStatus.PENDING);
+        return order;
+    }
 
     private OrderResponse toResponse(Order order){
         List<OrderItemResponse> orderItems = order.getOrderItems().stream()

@@ -5,6 +5,7 @@ import com.example.ecapi.dto.cart.CartResponse;
 import com.example.ecapi.entity.Cart;
 import com.example.ecapi.service.CartService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class CartController {
 
     @PostMapping
     @Operation(summary = "Add Item to My Cart")
-    public CartResponse addItem(@RequestBody AddCartItemRequest request,
+    public CartResponse addItem(@RequestBody @Valid AddCartItemRequest request,
                                 @AuthenticationPrincipal Jwt jwt){
         return cartService.addItem(request, jwt);
     }
