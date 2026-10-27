@@ -8,6 +8,8 @@ import com.example.ecapi.entity.User;
 import com.example.ecapi.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,8 +37,8 @@ public class ProductController {
 
     @GetMapping
     @Operation(summary = "Get All Product List")
-    public PageResponse<ProductResponse> getProducts(@RequestParam(defaultValue = "1") int page,
-                                                     @RequestParam(defaultValue = "50") int size){
+    public PageResponse<ProductResponse> getProducts(@RequestParam(defaultValue = "1") @Min(value = 1) int page,
+                                                     @RequestParam(defaultValue = "50") @Max(value = 50) int size){
         return productService.getProducts(page, size);
     }
 
@@ -48,16 +50,16 @@ public class ProductController {
 
     @GetMapping("/seller/{sellerId}")
     @Operation(summary = "Get Product List of Specific Seller")
-    public PageResponse<ProductResponse> getProductsOfSpecificSeller(@RequestParam(defaultValue = "1") int page,
-                                                     @RequestParam(defaultValue = "50") int size,
+    public PageResponse<ProductResponse> getProductsOfSpecificSeller(@RequestParam(defaultValue = "1") @Min(value = 1) int page,
+                                                     @RequestParam(defaultValue = "50") @Max(value = 50) int size,
                                                      @PathVariable UUID sellerId){
         return productService.getProductsOfSpecificSeller(page, size, sellerId);
     }
 
     @GetMapping("/category/{categoryId}")
     @Operation(summary = "Get Product List of Specific Category")
-    public PageResponse<ProductResponse> getProductsOfSpecificCategory(@RequestParam(defaultValue = "1") int page,
-                                                                     @RequestParam(defaultValue = "50") int size,
+    public PageResponse<ProductResponse> getProductsOfSpecificCategory(@RequestParam(defaultValue = "1") @Min(value = 1) int page,
+                                                                     @RequestParam(defaultValue = "50") @Max(value = 50) int size,
                                                                      @PathVariable UUID categoryId) {
         return productService.getProductsOfSpecificCategory(page, size, categoryId);
     }

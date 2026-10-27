@@ -4,6 +4,7 @@ import com.example.ecapi.dto.category.CategoryResponse;
 import com.example.ecapi.dto.category.CategoryUpdateRequest;
 import com.example.ecapi.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class AdminController {
 
     @PatchMapping("/category/{categoryId}")
     @Operation(summary = "Update Category (ADMIN only)")
-    public CategoryResponse updateCategory(@RequestBody CategoryUpdateRequest request,
+    public CategoryResponse updateCategory(@RequestBody @Valid CategoryUpdateRequest request,
                                            @PathVariable UUID categoryId,
                                            @AuthenticationPrincipal Jwt jwt){
         return adminService.updateCategory(request, categoryId, jwt);
