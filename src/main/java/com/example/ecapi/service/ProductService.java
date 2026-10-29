@@ -29,16 +29,18 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final UserService userService;
 
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository, UserRepository userRepository, CategoryRepository categoryRepository, UserService userService) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.userService = userService;
     }
 
     @Transactional
     public ProductResponse createProduct(ProductCreateRequest request, Jwt jwt){
-        User user = getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         if(user.getRole() != Role.ADMIN && user.getRole() != Role.SELLER){
             throw new AccessDeniedException("Only seller or admin can sell products.");
         }
@@ -79,7 +81,7 @@ public class ProductService {
     @Transactional
     public ProductResponse updateProduct(ProductUpdateRequest request, UUID productId, Jwt jwt){
         Product product = getProductIfExists(productId);
-        User user = getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         checkOwnership(product, user, "update");
 
         if(request.name() == null && request.description() == null && request.price() == null
@@ -120,7 +122,7 @@ public class ProductService {
     @Transactional
     public Map<String, String> deleteProduct(UUID productId, Jwt jwt){
         Product product = getProductIfExists(productId);
-        User user = getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         checkOwnership(product, user, "delete");
         productRepository.delete(product);
         return Map.of("detail","Product {" + product.getName() + "} was deleted successfully!");
@@ -133,10 +135,9 @@ public class ProductService {
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
     }
 
-    User getUserIfExists(Jwt jwt){
-        UUID userId = UUID.fromString(Objects.requireNonNull(jwt.getSubject()));
-        return userRepository.findById(userId)
-                .orElseThrow(()-> new ResourceNotFoundException("User Not Found"));
+    Product getProductIfExistsForUpdate(UUID productId){
+        return productRepository.findByIdForUpdate(productId)
+                .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
     }
 
     Category getCategoryIfExists(UUID categoryId){
