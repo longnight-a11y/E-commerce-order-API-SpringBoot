@@ -20,15 +20,17 @@ public class AdminService {
 
     private final CategoryRepository categoryRepository;
     private final ProductService productService;
+    private final UserService userService;
 
-    public AdminService(CategoryRepository categoryRepository, ProductService productService) {
+    public AdminService(CategoryRepository categoryRepository, ProductService productService, UserService userService) {
         this.categoryRepository = categoryRepository;
         this.productService = productService;
+        this.userService = userService;
     }
 
     @Transactional
     public CategoryResponse updateCategory(CategoryUpdateRequest request, UUID categoryId, Jwt jwt){
-        User user = productService.getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         if(user.getRole() != Role.ADMIN){
             throw new AccessDeniedException("Only admin can update category");
         }

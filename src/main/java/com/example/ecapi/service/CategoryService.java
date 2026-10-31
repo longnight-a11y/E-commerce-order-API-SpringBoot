@@ -21,16 +21,16 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final ProductService productService;
+    private final UserService userService;
 
-    public CategoryService(CategoryRepository categoryRepository, ProductService productService) {
+    public CategoryService(CategoryRepository categoryRepository, UserService userService) {
         this.categoryRepository = categoryRepository;
-        this.productService = productService;
+        this.userService = userService;
     }
 
     @Transactional
     public CategoryResponse createCategory(CategoryCreateRequest request, Jwt jwt){
-        User user = productService.getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         if(user.getRole() != Role.ADMIN && user.getRole() != Role.SELLER){
             throw new AccessDeniedException("Only seller or admin can create new categories.");
         }

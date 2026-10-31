@@ -27,14 +27,12 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final ProductService productService;
     private final ProductRepository productRepository;
     private final UserService userService;
     private final CartRepository cartRepository;
 
-    public OrderService(OrderRepository orderRepository, ProductService productService, ProductRepository productRepository, UserService userService, CartRepository cartRepository) {
+    public OrderService(OrderRepository orderRepository, ProductRepository productRepository, UserService userService, CartRepository cartRepository) {
         this.orderRepository = orderRepository;
-        this.productService = productService;
         this.productRepository = productRepository;
         this.userService = userService;
         this.cartRepository = cartRepository;
@@ -42,7 +40,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request, Jwt jwt){
-        User user = productService.getUserIfExists(jwt);
+        User user = userService.getUserIfExists(jwt);
         Order order = newOrder(user);
 
         BigDecimal total = BigDecimal.ZERO;
