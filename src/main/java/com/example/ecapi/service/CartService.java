@@ -102,8 +102,7 @@ public class CartService {
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found"));
         CartItem item = cart.getItems().stream().filter(i-> i.getProduct().getId().equals(productId)).findFirst()
                 .orElseThrow(()-> new ResourceNotFoundException("The item not found in your cart"));
-        cartItemRepository.delete(item);
-        cartItemRepository.save(item);
+        cart.getItems().remove(item);  // orphanRemoval = true
         return Map.of("detail", "Cart item [ " + product.getName() + " ] was removed successfully.");
     }
 
