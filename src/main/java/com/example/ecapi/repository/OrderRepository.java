@@ -1,6 +1,7 @@
 package com.example.ecapi.repository;
 
 import com.example.ecapi.entity.Order;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -16,7 +17,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findByUserId(UUID userid);
 
     @EntityGraph(attributePaths = {"user", "orderItems", "orderItems.product"})
-    Optional<Order> findById(UUID id);
+    Optional<Order> findWithDetailsById(@NonNull UUID id);
 
     @Query("SELECT o FROM Order o JOIN FETCH o.user JOIN FETCH o.orderItems JOIN FETCH o.orderItems.product WHERE o.user.id = :userId")
     Page<Order> findAllByUserId(@Param("userId") UUID userId, Pageable pageable);
