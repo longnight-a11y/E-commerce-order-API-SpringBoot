@@ -15,12 +15,12 @@ import com.example.ecapi.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -158,9 +158,30 @@ public class OrderService {
 
     public OrderResponse getSpecificOrder(Jwt jwt, UUID orderId){
         User user = userService.getUserIfExists(jwt);
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findWithDetailsById(orderId)
                 .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
         return toResponse(order);
+    }
+
+    @Transactional
+    public Map<String, String> cancelOrder(Jwt jwt, UUID orderId){
+        User user = userService.getUserIfExists(jwt);
+        Order order = orderRepository.findWithDetailsById(orderId)
+                .orElseThrow(()-> new ResourceNotFoundException("Order not found"));
+        if(order.getStatus().equals(OrderStatus.CANCELLED)){
+            throw new InvalidRequestException("This order is already cancelled");
+        }
+        if(!(order.getStatus().equals(OrderStatus.PENDING) || order.getStatus().equals(OrderStatus.CONFIRMED))){
+            throw new InvalidRequestException("You cannot cancel the already-shipped order.");
+        }
+
+        for(OrderItem item : order.getOrderItems()){
+            productRepository.findById(item.getProduct().getId())
+                    .ifPresent(product -> product.setStockQuantity(product.getStockQuantity() + item.getQuantity()));
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        return Map.of("detail", "Order was cancelled successfully");
     }
 
     // ------------------------------------------------------------------------------------------

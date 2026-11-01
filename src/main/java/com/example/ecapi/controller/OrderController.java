@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -53,8 +54,16 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
+    @Operation(summary = "Get an Order")
     public OrderResponse getSpecificOrder(@AuthenticationPrincipal Jwt jwt,
                                           @PathVariable UUID orderId){
         return orderService.getSpecificOrder(jwt, orderId);
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    @Operation(summary = "Cancel an Order")
+    public Map<String, String> cancelOrder(@AuthenticationPrincipal Jwt jwt,
+                                           @PathVariable UUID orderId){
+        return orderService.cancelOrder(jwt, orderId);
     }
 }
