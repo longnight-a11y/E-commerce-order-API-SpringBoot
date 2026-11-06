@@ -114,6 +114,7 @@ public class OrderService {
         order.setTotalPrice(total);
 
         Order saved = orderRepository.save(order);
+        eventPublisher.publishEvent(new OrderCreatedEvent(saved.getId(), user.getEmail()));
         return toResponse(saved);
     }
 
