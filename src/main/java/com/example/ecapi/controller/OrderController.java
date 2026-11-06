@@ -26,12 +26,6 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @PostMapping
-    @Operation(summary = "Create Order")
-    public OrderResponse createOrder(@RequestBody @Valid CreateOrderRequest request,
-                                     @AuthenticationPrincipal Jwt jwt){
-        return orderService.createOrder(request, jwt);
-    }
     @PostMapping("/checkout")
     @Operation(summary = "Checkout All Cart Items")
     public OrderResponse checkout(@AuthenticationPrincipal Jwt jwt){
