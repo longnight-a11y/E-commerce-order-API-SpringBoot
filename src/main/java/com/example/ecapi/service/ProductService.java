@@ -80,7 +80,7 @@ public class ProductService {
 
     @Transactional
     public ProductResponse updateProduct(ProductUpdateRequest request, UUID productId, Jwt jwt){
-        Product product = getProductIfExists(productId);
+        Product product = getProductIfExistsForUpdate(productId);
         User user = userService.getUserIfExists(jwt);
         checkOwnership(product, user, "update");
 
@@ -121,7 +121,7 @@ public class ProductService {
 
     @Transactional
     public Map<String, String> deleteProduct(UUID productId, Jwt jwt){
-        Product product = getProductIfExists(productId);
+        Product product = getProductIfExistsForUpdate(productId);
         User user = userService.getUserIfExists(jwt);
         checkOwnership(product, user, "delete");
         productRepository.delete(product);
