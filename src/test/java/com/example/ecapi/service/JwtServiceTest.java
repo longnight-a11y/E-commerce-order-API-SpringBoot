@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Date;
@@ -44,14 +45,59 @@ public class JwtServiceTest {
         assertNotNull(token);
         assertFalse(token.isBlank());
 
-        Claims claims = Jwts.parser()
+        Claims claims = parseClaims(token, key);
+
+        assertEquals(userId.toString(), claims.getSubject());
+        assertEquals(role.name(), claims.get("role", String.class));
+    }
+
+    @Test
+    void createToken_issuedAt(){
+        UUID userId = UUID.randomUUID();
+        Role role = Role.CUSTOMER;
+        // Act
+        String token = jwtService.createToken(userId, role);
+
+        Claims claims = parseClaims(token, key);
+
+        assertEquals(Date.from(NOW), claims.getIssuedAt());
+    }
+
+    @Test
+    void createToken_expiration(){
+        UUID userId = UUID.randomUUID();
+        Role role = Role.CUSTOMER;
+        // Act
+        String token = jwtService.createToken(userId, role);
+
+        Claims claims = parseClaims(token, key);
+
+        Instant expectedExpiry = NOW.plus(Duration.ofMinutes(30));
+
+        assertEquals(Date.from(expectedExpiry), claims.getExpiration());
+    }
+
+    @Test
+    void createToken_wrongKey(){
+        UUID userId = UUID.randomUUID();
+        Role role = Role.CUSTOMER;
+        // Act
+        String token = jwtService.createToken(userId, role);
+
+        SecretKey wrongKey = Keys.hmacShaKeyFor("this-is-a-very-long-another-test-secret-key-for-testing-purposes".
+                getBytes(StandardCharsets.UTF_8));
+
+        assertThrows(io.jsonwebtoken.security.SignatureException.class,
+                ()-> parseClaims(token, wrongKey));
+    }
+
+
+    private Claims parseClaims(String token, SecretKey key){
+        return Jwts.parser()
                 .verifyWith(key)
                 .clock(()-> Date.from(clock.instant()))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        assertEquals(userId.toString(), claims.getSubject());
-        assertEquals(role.name(), claims.get("role", String.class));
     }
 }
