@@ -37,7 +37,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(userId.toString())
-                .claim("role", role)
+                .claim("role", role.name())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
                 .signWith(key)
