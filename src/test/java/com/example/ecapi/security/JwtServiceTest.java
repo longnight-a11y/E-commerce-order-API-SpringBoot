@@ -1,8 +1,7 @@
-package com.example.ecapi.service;
+package com.example.ecapi.security;
 
 
 import com.example.ecapi.enums.Role;
-import com.example.ecapi.security.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
