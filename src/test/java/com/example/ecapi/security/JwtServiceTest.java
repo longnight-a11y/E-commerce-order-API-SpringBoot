@@ -30,7 +30,7 @@ public class JwtServiceTest {
     @BeforeEach
     void setUp(){
         key = Keys.hmacShaKeyFor("this-is-a-very-long-secret-key-for-testing-purposes".getBytes(StandardCharsets.UTF_8));
-        clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        clock = Clock.fixed(NOW, ZoneOffset.UTC);  // make Instant.now() fixed
         jwtService = new JwtService(key, clock);
     }
 
