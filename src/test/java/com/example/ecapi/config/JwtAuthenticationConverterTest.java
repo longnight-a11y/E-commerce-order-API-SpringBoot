@@ -39,10 +39,32 @@ public class JwtAuthenticationConverterTest {
         assertNotNull(authentication);
 
         List<String> authorities = authentication.getAuthorities()
-                .stream().map(GrantedAuthority::getAuthority)
+                .stream().map(GrantedAuthority::getAuthority) // getAuthority() converts GrantedAuthority into String
                 .filter(authority -> authority.startsWith("ROLE_")).toList();
 
         assertEquals(List.of("ROLE_" + role), authorities);
+    }
+
+    @Test
+    void convert_missingRole(){
+        Instant now = Instant.now();
+
+        Jwt jwt = Jwt.withTokenValue("test-token")
+                .header("alg", "HS256")
+                .subject("user-id")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(600))
+                .build();
+
+        AbstractAuthenticationToken authentication = converter.convert(jwt);
+
+        assertNotNull(authentication);
+
+        List<String> authorities = authentication.getAuthorities()
+                .stream().map(GrantedAuthority::getAuthority)
+                .filter(authority -> authority.startsWith("ROLE_")).toList();
+
+        assertTrue(authorities.isEmpty());
     }
 
 
