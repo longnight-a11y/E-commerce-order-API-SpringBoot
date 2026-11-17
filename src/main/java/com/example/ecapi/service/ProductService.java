@@ -27,13 +27,11 @@ import java.util.*;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final UserService userService;
 
     public ProductService(ProductRepository productRepository, UserRepository userRepository, CategoryRepository categoryRepository, UserService userService) {
         this.productRepository = productRepository;
-        this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.userService = userService;
     }

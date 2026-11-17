@@ -1,8 +1,7 @@
-package com.example.ecapi.service;
+package com.example.ecapi.security;
 
 
 import com.example.ecapi.enums.Role;
-import com.example.ecapi.security.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -31,7 +30,7 @@ public class JwtServiceTest {
     @BeforeEach
     void setUp(){
         key = Keys.hmacShaKeyFor("this-is-a-very-long-secret-key-for-testing-purposes".getBytes(StandardCharsets.UTF_8));
-        clock = Clock.fixed(NOW, ZoneOffset.UTC);
+        clock = Clock.fixed(NOW, ZoneOffset.UTC);  // make Instant.now() fixed
         jwtService = new JwtService(key, clock);
     }
 
