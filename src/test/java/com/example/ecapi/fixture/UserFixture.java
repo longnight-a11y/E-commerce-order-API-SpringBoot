@@ -11,13 +11,13 @@ public final class UserFixture {
 
     private UserFixture(){}  // prevents instantiation because all methods here are static
 
-    public static User customer(){
+    public static User user(Role role){
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setUsername("Mikasa");
         user.setPassword("testpassword");
         user.setEmail("testuser@example.com");
-        user.setRole(Role.CUSTOMER);
+        user.setRole(role);
         user.setCart(CartFixture.cart(user));
         return user;
     }

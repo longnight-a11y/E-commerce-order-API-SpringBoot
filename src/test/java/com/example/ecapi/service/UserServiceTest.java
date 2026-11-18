@@ -44,7 +44,7 @@ public class UserServiceTest {
     @BeforeEach
     void setUp(){
         request = UserFixture.request();
-        user = UserFixture.customer();
+        user = UserFixture.user(Role.CUSTOMER);
     }
 
     @Test

@@ -30,7 +30,7 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final UserService userService;
 
-    public ProductService(ProductRepository productRepository, UserRepository userRepository, CategoryRepository categoryRepository, UserService userService) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, UserService userService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.userService = userService;
