@@ -1,5 +1,6 @@
 package com.example.ecapi.service;
 
+import com.example.ecapi.dto.pagination.PageResponse;
 import com.example.ecapi.dto.product.ProductCreateRequest;
 import com.example.ecapi.dto.product.ProductResponse;
 import com.example.ecapi.entity.Category;
@@ -7,6 +8,7 @@ import com.example.ecapi.entity.Product;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.enums.Role;
 import com.example.ecapi.exception.AccessDeniedException;
+import com.example.ecapi.exception.ResourceNotFoundException;
 import com.example.ecapi.fixture.CategoryFixture;
 import com.example.ecapi.fixture.JwtFixture;
 import com.example.ecapi.fixture.ProductFixture;
@@ -20,8 +22,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.client.ResourceAccessException;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,6 +55,7 @@ public class ProductServiceTest {
     private User user;
     private Jwt jwt;
     private Category category;
+    private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
     @BeforeEach
     void setUp(){
@@ -96,5 +106,67 @@ public class ProductServiceTest {
         assertEquals("Only seller or admin can sell products.", exception.getMessage());
 
         verifyNoInteractions(categoryRepository, productRepository);
+    }
+
+    @Test
+    void createProduct_categoryNotFound(){
+        ProductCreateRequest request = ProductFixture.request(category);
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.empty());
+        // Act & Throw
+        ResourceNotFoundException exception =
+                assertThrows(ResourceNotFoundException.class, ()-> productService.createProduct(request, jwt));
+
+        assertEquals("Category not found", exception.getMessage());
+        verify(productRepository, never()).save(any(Product.class));
+    }
+
+    @Test
+    void getProducts_success(){
+        Product product1 = ProductFixture.product(user, category, NOW);
+        Product product2 = ProductFixture.product(user, category, NOW);
+        Page<Product> page = new PageImpl<>(List.of(product1, product2),
+                PageRequest.of(0, 10), 25);
+        when(productRepository.findAllWithUserAndCategory(PageRequest.of(0, 10))).thenReturn(page);
+        // Act
+        PageResponse<ProductResponse> response = productService.getProducts(1, 10);
+        // Assert
+        assertEquals(2, response.item().size());
+        assertEquals(25, response.total());
+        assertEquals(1, response.page());
+        assertEquals(10, response.size());
+
+        assertEquals("Test Product", response.item().getFirst().name());
+
+        verify(productRepository).findAllWithUserAndCategory(PageRequest.of(0, 10));
+    }
+
+    @Test
+    void getSingleProduct_success(){
+        Product product = ProductFixture.product(user, category, NOW);
+        when(productRepository.findByIdWithUserAndCategory(product.getId())).thenReturn(Optional.of(product));
+        // Act
+        ProductResponse response = productService.getSingleProduct(product.getId());
+
+        assertEquals("Test Product", response.name());
+        assertEquals("This is for test", response.description());
+        assertEquals(100, response.stockQuantity());
+        assertEquals(BigDecimal.valueOf(1000), response.price());
+        assertEquals(category.getId(), response.categoryId());
+        assertEquals(user.getId(), response.sellerId());
+        assertEquals(NOW, response.createdAt());
+        assertEquals(NOW, response.updatedAt());
+
+        verify(productRepository).findByIdWithUserAndCategory(product.getId());
+    }
+
+    @Test
+    void getSingleProduct_NotFound(){
+        Product product = ProductFixture.product(user, category, NOW);
+        when(productRepository.findByIdWithUserAndCategory(product.getId())).thenReturn(Optional.empty());
+        // Act & Throw
+        ResourceNotFoundException exception =
+                assertThrows(ResourceNotFoundException.class, ()-> productService.getSingleProduct(product.getId()));
+        assertEquals("Product not found", exception.getMessage());
     }
 }

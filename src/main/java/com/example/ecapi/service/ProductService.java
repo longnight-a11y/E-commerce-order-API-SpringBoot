@@ -57,7 +57,7 @@ public class ProductService {
     public PageResponse<ProductResponse> getProducts(int page, int size){
         Page<Product> result = productRepository.findAllWithUserAndCategory(PageRequest.of(page - 1, size));
         List<ProductResponse> items = result.getContent().stream().map(this::toResponse).toList();
-        return new PageResponse<>(items, result.getNumberOfElements(), page, size);
+        return new PageResponse<>(items, Math.toIntExact(result.getTotalElements()), page, size);
     }
 
     public ProductResponse getSingleProduct(UUID productId){
@@ -144,7 +144,8 @@ public class ProductService {
     }
 
     private void checkOwnership(Product product, User user, String action){
-        if(!product.getSeller().getId().equals(user.getId())){
+        if(user.getRole() != Role.ADMIN
+        && !product.getSeller().getId().equals(user.getId())){
             throw new AccessDeniedException("Not authorized to " + action + " this product");
         }
     }
