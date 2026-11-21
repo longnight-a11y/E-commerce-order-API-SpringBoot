@@ -32,6 +32,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -131,10 +132,10 @@ public class ProductServiceTest {
         // Act
         PageResponse<ProductResponse> response = productService.getProducts(1, 10);
         // Assert
-        assertEquals(2, response.item().size());
-        assertEquals(25, response.total());
+        assertEquals(2, response.item().size());  // number of products in the current page (page 1)
+        assertEquals(25, response.total());  // total number of products across all pages
         assertEquals(1, response.page());
-        assertEquals(10, response.size());
+        assertEquals(10, response.size());  // maximum number of products per page
 
         assertEquals("Test Product", response.item().getFirst().name());
 
@@ -169,4 +170,50 @@ public class ProductServiceTest {
                 assertThrows(ResourceNotFoundException.class, ()-> productService.getSingleProduct(product.getId()));
         assertEquals("Product not found", exception.getMessage());
     }
+
+    @Test
+    void getProductsOfSpecificSeller_success(){
+        Product product1 = ProductFixture.product(user, category, NOW);
+        Product product2 = ProductFixture.product(user, category, NOW);
+        Page<Product> page = new PageImpl<>(List.of(product1, product2),
+                PageRequest.of(0, 10), 2);
+        when(productRepository.
+                findAllBySellerIdWithUserAndCategory(user.getId(), PageRequest.of(0, 10))).thenReturn(page);
+        // Act
+        PageResponse<ProductResponse> response = productService.getProductsOfSpecificSeller(1, 10, user.getId());
+        // Assert
+        assertEquals(2, response.item().size());
+        assertEquals(2, response.total());
+        assertEquals(1, response.page());
+        assertEquals(10, response.size());
+
+        assertEquals("Test Product", response.item().getFirst().name());
+        assertEquals(user.getId(), response.item().getFirst().sellerId());
+
+        verify(productRepository).findAllBySellerIdWithUserAndCategory(user.getId(), PageRequest.of(0, 10));
+    }
+
+    @Test
+    void getProductsOfSpecificCategory_success(){
+        Product product = ProductFixture.product(user, category, NOW);
+        Page<Product> page = new PageImpl<>(List.of(product),
+                PageRequest.of(0, 10), 1);
+        when(productRepository.
+                findAllByCategoryIdWithUserAndCategory(category.getId(), PageRequest.of(0, 10))).thenReturn(page);
+        // Act
+        PageResponse<ProductResponse> response = productService.getProductsOfSpecificCategory(1, 10, category.getId());
+        // Assert
+        assertEquals(1, response.item().size());
+        assertEquals(1, response.total());
+        assertEquals(1, response.page());
+        assertEquals(10, response.size());
+
+        assertEquals("Test Product", response.item().getFirst().name());
+        assertEquals(category.getId(), response.item().getFirst().categoryId());
+        assertTrue(response.item().stream()
+                .allMatch(item -> item.categoryId().equals(category.getId())));
+
+        verify(productRepository).findAllByCategoryIdWithUserAndCategory(category.getId(), PageRequest.of(0, 10));
+    }
+
 }
