@@ -3,6 +3,7 @@ package com.example.ecapi.service;
 import com.example.ecapi.dto.pagination.PageResponse;
 import com.example.ecapi.dto.product.ProductCreateRequest;
 import com.example.ecapi.dto.product.ProductResponse;
+import com.example.ecapi.dto.product.ProductUpdateRequest;
 import com.example.ecapi.entity.Category;
 import com.example.ecapi.entity.Product;
 import com.example.ecapi.entity.User;
@@ -214,6 +215,74 @@ public class ProductServiceTest {
                 .allMatch(item -> item.categoryId().equals(category.getId())));
 
         verify(productRepository).findAllByCategoryIdWithUserAndCategory(category.getId(), PageRequest.of(0, 10));
+    }
+
+    @Test
+    void updateProduct_success(){
+        Product product = ProductFixture.product(user, category, NOW);
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                "Updated Product", "Updated Description",
+                BigDecimal.valueOf(2000), null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        // Act
+        ProductResponse response = productService.updateProduct(request, product.getId(), jwt);
+        // Assert
+        assertEquals("Updated Product", response.name());
+        assertEquals("Updated Description", response.description());
+        assertEquals(BigDecimal.valueOf(2000), response.price());
+        assertEquals(100, response.stockQuantity());
+        assertEquals(category.getId(), response.categoryId());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository, never()).save(product);
+    }
+    @Test
+    void updateProduct_success_adminCanUpdateOthersProduct(){
+        Product product = ProductFixture.product(user, category, NOW);
+        User admin = UserFixture.user(Role.ADMIN);
+        jwt = JwtFixture.jwt(admin);
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                "Updated Product", "Updated Description",
+                BigDecimal.valueOf(2000), null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(admin);
+        // Act
+        ProductResponse response = productService.updateProduct(request, product.getId(), jwt);
+        // Assert
+        assertEquals("Updated Product", response.name());
+        assertEquals("Updated Description", response.description());
+        assertEquals(BigDecimal.valueOf(2000), response.price());
+        assertEquals(100, response.stockQuantity());
+        assertEquals(category.getId(), response.categoryId());
+
+        assertEquals(user.getId(), response.sellerId());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository, never()).save(product);
+    }
+
+    @Test
+    void updateProduct_sellerTryToUpdateOthersProduct(){
+        Product product = ProductFixture.product(user, category, NOW);
+        User anotherUser = UserFixture.user(Role.SELLER);
+        Jwt anotherJwt = JwtFixture.jwt(anotherUser);
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                "Updated Product", "Updated Description",
+                BigDecimal.valueOf(2000), null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(anotherJwt)).thenReturn(anotherUser);
+        // Act & Assert
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                ()-> productService.updateProduct(request, product.getId(), anotherJwt));
+
+        assertEquals("Not authorized to update this product", exception.getMessage());
+        assertNotEquals("Updated Product", product.getName());
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(anotherJwt);
+        verify(productRepository, never()).save(product);
     }
 
 }
