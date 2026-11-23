@@ -57,6 +57,7 @@ public class ProductServiceTest {
     private User user;
     private Jwt jwt;
     private Category category;
+    private Product product;
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
     @BeforeEach
@@ -64,6 +65,7 @@ public class ProductServiceTest {
         user = UserFixture.user(Role.SELLER);
         jwt = JwtFixture.jwt(user);
         category = CategoryFixture.category();
+        product = ProductFixture.product(user, category, NOW);
     }
 
     @Test
@@ -125,9 +127,8 @@ public class ProductServiceTest {
 
     @Test
     void getProducts_success(){
-        Product product1 = ProductFixture.product(user, category, NOW);
         Product product2 = ProductFixture.product(user, category, NOW);
-        Page<Product> page = new PageImpl<>(List.of(product1, product2),
+        Page<Product> page = new PageImpl<>(List.of(product, product2),
                 PageRequest.of(0, 10), 25);
         when(productRepository.findAllWithUserAndCategory(PageRequest.of(0, 10))).thenReturn(page);
         // Act
@@ -145,7 +146,6 @@ public class ProductServiceTest {
 
     @Test
     void getSingleProduct_success(){
-        Product product = ProductFixture.product(user, category, NOW);
         when(productRepository.findByIdWithUserAndCategory(product.getId())).thenReturn(Optional.of(product));
         // Act
         ProductResponse response = productService.getSingleProduct(product.getId());
@@ -164,7 +164,6 @@ public class ProductServiceTest {
 
     @Test
     void getSingleProduct_NotFound(){
-        Product product = ProductFixture.product(user, category, NOW);
         when(productRepository.findByIdWithUserAndCategory(product.getId())).thenReturn(Optional.empty());
         // Act & Throw
         ResourceNotFoundException exception =
@@ -174,9 +173,8 @@ public class ProductServiceTest {
 
     @Test
     void getProductsOfSpecificSeller_success(){
-        Product product1 = ProductFixture.product(user, category, NOW);
         Product product2 = ProductFixture.product(user, category, NOW);
-        Page<Product> page = new PageImpl<>(List.of(product1, product2),
+        Page<Product> page = new PageImpl<>(List.of(product, product2),
                 PageRequest.of(0, 10), 2);
         when(productRepository.
                 findAllBySellerIdWithUserAndCategory(user.getId(), PageRequest.of(0, 10))).thenReturn(page);
@@ -196,7 +194,6 @@ public class ProductServiceTest {
 
     @Test
     void getProductsOfSpecificCategory_success(){
-        Product product = ProductFixture.product(user, category, NOW);
         Page<Product> page = new PageImpl<>(List.of(product),
                 PageRequest.of(0, 10), 1);
         when(productRepository.
@@ -219,7 +216,6 @@ public class ProductServiceTest {
 
     @Test
     void updateProduct_success(){
-        Product product = ProductFixture.product(user, category, NOW);
         ProductUpdateRequest request = new ProductUpdateRequest(
                 "Updated Product", "Updated Description",
                 BigDecimal.valueOf(2000), null, null);
@@ -236,11 +232,11 @@ public class ProductServiceTest {
 
         verify(productRepository).findByIdForUpdate(product.getId());
         verify(userService).getUserIfExists(jwt);
-        verify(productRepository, never()).save(product);
+        verify(productRepository, never()).save(product);  // 必須ではない
     }
+
     @Test
     void updateProduct_success_adminCanUpdateOthersProduct(){
-        Product product = ProductFixture.product(user, category, NOW);
         User admin = UserFixture.user(Role.ADMIN);
         jwt = JwtFixture.jwt(admin);
         ProductUpdateRequest request = new ProductUpdateRequest(
@@ -266,7 +262,6 @@ public class ProductServiceTest {
 
     @Test
     void updateProduct_sellerTryToUpdateOthersProduct(){
-        Product product = ProductFixture.product(user, category, NOW);
         User anotherUser = UserFixture.user(Role.SELLER);
         Jwt anotherJwt = JwtFixture.jwt(anotherUser);
         ProductUpdateRequest request = new ProductUpdateRequest(
@@ -284,5 +279,42 @@ public class ProductServiceTest {
         verify(userService).getUserIfExists(anotherJwt);
         verify(productRepository, never()).save(product);
     }
+
+    @Test
+    void updateProduct_productNotFound(){
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                "Updated Product", "Updated Description",
+                BigDecimal.valueOf(2000), null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.empty());
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                ()-> productService.updateProduct(request, product.getId(), jwt));
+        assertEquals("Product not found", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verifyNoInteractions(userService);
+        verify(productRepository, never()).save(any(Product.class));
+    }
+
+    @Test
+    void updateProduct_categoryNotFound(){
+        UUID missingCategoryId = UUID.randomUUID();
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                null, null, null, null, missingCategoryId);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        when(categoryRepository.findById(missingCategoryId)).thenReturn(Optional.empty());
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                ()-> productService.updateProduct(request, product.getId(), jwt));
+        assertEquals("Category not found", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(categoryRepository).findById(missingCategoryId);
+        verify(productRepository, never()).save(product);
+    }
+
+    // updateProduct_allFieldsAreNull
 
 }
