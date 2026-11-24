@@ -9,6 +9,7 @@ import com.example.ecapi.entity.Product;
 import com.example.ecapi.entity.User;
 import com.example.ecapi.enums.Role;
 import com.example.ecapi.exception.AccessDeniedException;
+import com.example.ecapi.exception.InvalidRequestException;
 import com.example.ecapi.exception.ResourceNotFoundException;
 import com.example.ecapi.fixture.CategoryFixture;
 import com.example.ecapi.fixture.JwtFixture;
@@ -19,6 +20,8 @@ import com.example.ecapi.repository.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -315,6 +318,58 @@ public class ProductServiceTest {
         verify(productRepository, never()).save(product);
     }
 
-    // updateProduct_allFieldsAreNull
+    @Test
+    void updateProduct_allFieldsAreNull(){
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                null, null, null, null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        // Act & Assert
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                ()-> productService.updateProduct(request, product.getId(), jwt));
+
+        assertEquals("At least one field must be provided", exception.getMessage());
+        assertNotNull(product.getName());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository, never()).save(product);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-1", "0", "-100.00"})
+    void updateProduct_invalidPrice(String price){
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                null, null, new BigDecimal(price), null, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        // Act & Assert
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                ()-> productService.updateProduct(request, product.getId(), jwt));
+
+        assertEquals("Price must be a positive number", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository, never()).save(product);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-1, -10, -100})
+    void updateProduct_invalidStockQuantity(int quantity){
+        ProductUpdateRequest request = new ProductUpdateRequest(
+                null, null, null, quantity, null);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        // Act & Assert
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                ()-> productService.updateProduct(request, product.getId(), jwt));
+
+        assertEquals("Stock quantity must not be negative", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository, never()).save(product);
+    }
 
 }
