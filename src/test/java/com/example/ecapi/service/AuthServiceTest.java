@@ -45,7 +45,7 @@ public class AuthServiceTest {
 
     @BeforeEach
     void setUp(){
-        user = UserFixture.customer();
+        user = UserFixture.user(Role.CUSTOMER);
     }
 
     @Test
