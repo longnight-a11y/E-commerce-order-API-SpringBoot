@@ -35,6 +35,7 @@ import org.springframework.web.client.ResourceAccessException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -264,7 +265,7 @@ public class ProductServiceTest {
     }
 
     @Test
-    void updateProduct_sellerTryToUpdateOthersProduct(){
+    void updateProduct_anotherSellerTryToUpdateOthersProduct(){
         User anotherUser = UserFixture.user(Role.SELLER);
         Jwt anotherJwt = JwtFixture.jwt(anotherUser);
         ProductUpdateRequest request = new ProductUpdateRequest(
@@ -370,6 +371,66 @@ public class ProductServiceTest {
         verify(productRepository).findByIdForUpdate(product.getId());
         verify(userService).getUserIfExists(jwt);
         verify(productRepository, never()).save(product);
+    }
+
+    @Test
+    void deleteProduct_success(){
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(user);
+        // Act
+        Map<String, String> response = productService.deleteProduct(product.getId(), jwt);
+
+        assertEquals("Product {Test Product} was deleted successfully!", response.get("detail"));
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository).delete(product);
+    }
+
+    @Test
+    void deleteProduct_adminCanDeleteOthersProduct(){
+        User admin = UserFixture.user(Role.ADMIN);
+        jwt = JwtFixture.jwt(admin);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(jwt)).thenReturn(admin);
+        // Act
+        Map<String, String> response = productService.deleteProduct(product.getId(), jwt);
+
+        assertEquals("Product {Test Product} was deleted successfully!", response.get("detail"));
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(jwt);
+        verify(productRepository).delete(product);
+    }
+
+    @Test
+    void deleteProduct_productNotFound(){
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.empty());
+        // Act & Assert
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
+                ()-> productService.deleteProduct(product.getId(), jwt));
+        assertEquals("Product not found", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verifyNoInteractions(userService);
+        verify(productRepository, never()).delete(product);
+    }
+
+    @Test
+    void deleteProduct_anotherSellerTryToDeleteOthersProduct(){
+        User anotherUser = UserFixture.user(Role.SELLER);
+        Jwt anotherJwt = JwtFixture.jwt(anotherUser);
+        when(productRepository.findByIdForUpdate(product.getId())).thenReturn(Optional.of(product));
+        when(userService.getUserIfExists(anotherJwt)).thenReturn(anotherUser);
+        // Act & Assert
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                ()-> productService.deleteProduct(product.getId(), anotherJwt));
+
+        assertEquals("Not authorized to delete this product", exception.getMessage());
+
+        verify(productRepository).findByIdForUpdate(product.getId());
+        verify(userService).getUserIfExists(anotherJwt);
+        verify(productRepository, never()).delete(product);
     }
 
 }
